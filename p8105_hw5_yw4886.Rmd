@@ -7,6 +7,7 @@ output: github_document
 
 ```{r setup, include=FALSE}
 library(tidyverse)
+library(knitr)
 
 knitr::opts_chunk$set(
   fig.width = 7,
@@ -113,6 +114,9 @@ longitudinal_df |>
   summarize(
     n_subjects = n_distinct(subject_id),
     n_observations = n()
+  ) |> 
+  kable(
+    col.names = c("Study arm", "Participants", "Observations")
   )
 ```
 
@@ -237,7 +241,14 @@ estimate_summary |>
       "mean_rejected" = "Rejected null only"
     )
   ) |> 
-  ggplot(aes(x = true_mu, y = average_estimate, color = sample_type)) +
+  ggplot(
+    aes(
+      x = true_mu,
+      y = average_estimate,
+    color = sample_type,
+      linetype = sample_type
+    )
+  ) + 
   geom_abline(intercept = 0, slope = 1, linetype = "dashed") +
   geom_line() +
   geom_point() +
@@ -247,6 +258,12 @@ estimate_summary |>
     x = "True mean",
     y = "Average estimated mean",
     color = "Sample type"
+  ) +
+  scale_color_manual(
+    values = c(
+      "All samples" = "steelblue",
+      "Rejected null only" = "darkorange"
+    )
   ) +
   theme_bw() +
   theme(legend.position = "bottom")
