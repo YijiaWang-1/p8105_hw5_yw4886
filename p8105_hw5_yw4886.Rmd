@@ -1,7 +1,7 @@
 ---
 title: "Data Science HW5"
 author: "Yijia"
-date: "2026-11-18
+date: "2026-11-18"
 output: github_document
 ---
 
@@ -108,22 +108,33 @@ longitudinal_df =
   ) |> 
   mutate(week = as.numeric(week))
 
-longitudinal_df
+longitudinal_df |> 
+  group_by(arm) |> 
+  summarize(
+    n_subjects = n_distinct(subject_id),
+    n_observations = n()
+  )
 ```
 
-Each row represents an observation for one participant at one week. The study arm is included in the subject identifier so that participants with the same numerical ID in different arms are not confused.
+The tidy dataset contains `r nrow(longitudinal_df)` observations from `r n_distinct(longitudinal_df$subject_id)` participants, with `r n_distinct(longitudinal_df$subject_id[longitudinal_df$arm == "Control"])` participants in the control arm and `r n_distinct(longitudinal_df$subject_id[longitudinal_df$arm == "Experimental"])` participants in the experimental arm, across `r n_distinct(longitudinal_df$week)` weeks of observation. Each row represents an observation for one participant at a given week. The study arm is included in `subject_id` to ensure that participants with the same numerical ID in different arms are uniquely identified.
 
 ```{r spaghetti-plot}
 longitudinal_df |> 
   ggplot(aes(x = week, y = observation, group = subject_id, color = arm)) +
-  geom_line(alpha = 0.7) +
-  geom_point(size = 1.5) +
+  geom_line(alpha = 0.8, linewidth = 0.6) +
+  geom_point(size = 1.5) + 
   facet_grid(. ~ arm) +
   scale_x_continuous(breaks = 1:8) +
   labs(
     title = "Longitudinal Observations by Study Arm",
     x = "Week",
     y = "Observation"
+  ) +
+  scale_color_manual(
+    values = c(
+      "Control" = "steelblue",
+      "Experimental" = "darkorange"
+    )
   ) +
   theme_bw() +
   theme(legend.position = "none")
@@ -180,9 +191,14 @@ power_df =
 ```{r power-plot}
 power_df |> 
   ggplot(aes(x = true_mu, y = power)) +
-  geom_line() +
-  geom_point() +
+  geom_line(color = "steelblue") +
+  geom_point(color = "steelblue") +
+  geom_hline(
+    yintercept = 0.05,
+    linetype = "dashed"
+  ) +
   scale_x_continuous(breaks = 0:6) +
+  scale_y_continuous(limits = c(0, 1)) +
   labs(
     title = "Power of a One-Sample t-test",
     x = "True mean",
@@ -236,6 +252,6 @@ estimate_summary |>
   theme(legend.position = "bottom")
 ```
 
-The average estimate across all samples is approximately equal to the true mean, which is consistent with the sample mean being an unbiased estimator. However, the average estimate among samples for which the null hypothesis is rejected tends to overestimate small positive true means. When power is low, samples with unusually large estimated effects are more likely to produce statistically significant results. Selecting only those samples therefore introduces selection bias.
+The average estimate across all simulated samples is approximately equal to the true mean, which is consistent with the sample mean being an unbiased estimator. However, when the true mean is small and positive, the average estimate among samples for which the null hypothesis is rejected tends to be larger than the true mean. When power is low, samples with unusually large estimated effects are more likely to produce statistically significant results. Selecting only statistically significant samples therefore introduces selection bias.
 
-As the true mean increases and power approaches 1, nearly all samples lead to rejection, and the difference between the two averages becomes smaller. When the true mean is zero, the average estimate among rejected samples is expected to be approximately zero because the two-sided test selects extreme estimates in both directions.
+As the true mean increases and power approaches 1, nearly all samples lead to rejection, and the difference between the two averages becomes smaller. When the true mean is zero, the conditional average estimate is theoretically zero because the two-sided test selects extreme estimates in both directions. The slight deviation from zero observed in the simulation can be attributed to Monte Carlo variability and the relatively small number of rejected samples.
